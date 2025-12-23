@@ -5,6 +5,8 @@ pub enum TokenizeError {
     UnfinishedLiteralValue,
     /// Unable to parse the float
     ParseNumberError(ParseFloatError),
+    /// String was never completed
+    UnclosedQuotes,
 }
 
 pub fn tokenize(input: String) -> Result<Vec<Token>, TokenizeError> {
@@ -45,8 +47,11 @@ fn make_token(chars: &[char], index: &mut usize) -> Result<Token, TokenizeError>
 fn tokenize_string(chars: &[char], index: &mut usize) -> Result<Token, TokenizeError> {
     let mut string = String::new();
 
-    while *index < chars.len() {
+    loop {
         *index += 1;
+        if *index >= chars.len() {
+            return Err(TokenizeError::UnclosedQuotes);
+        }
         let ch = chars[*index];
         if ch == '"' {
             break;
@@ -141,7 +146,7 @@ pub enum Token {
 
 #[cfg(test)]
 mod tests {
-    use super::{Token, tokenize};
+    use super::{Token, tokenize, TokenizeError};
 
     #[test]
     fn just_comma() {
@@ -256,6 +261,16 @@ mod tests {
         let expected = [Token::String(String::from("ken"))];
 
         let actual = tokenize(input).unwrap();
+
+        assert_eq!(actual, expected);
+    }
+
+    #[test]
+    fn unclosed_string() {
+        let input = String::from("\"unclosed");
+        let expected = Err(TokenizeError::UnclosedQuotes);
+
+        let actual = tokenize(input);
 
         assert_eq!(actual, expected);
     }
