@@ -1,29 +1,53 @@
-pub fn tokenize(input: String) -> Vec<Token> {
+#[derive(Debug, PartialEq, Eq, Clone)]
+pub enum TokenizeError {
+    UnfinishedLiteralValue,
+}
+
+pub fn tokenize(input: String) -> Result<Vec<Token>, TokenizeError> {
     // replace the function body
     let chars: Vec<char> = input.chars().collect();
     let mut index = 0;
 
     let mut tokens = Vec::new();
     while index < chars.len() {
-        let token = make_token(chars[index]);
+        let token = make_token(&chars, &mut index)?;
         tokens.push(token);
         index += 1;
     }
 
-    tokens
+    Ok(tokens)
 }
 
-fn make_token(ch: char) -> Token {
-    match ch {
+fn make_token(chars: &[char], index: &mut usize) -> Result<Token, TokenizeError> {
+    let ch = chars[*index];
+    let token = match ch {
         '[' => Token::LeftBracket,
         ']' => Token::RightBracket,
         '{' => Token::LeftBrace,
         '}' => Token::RightBrace,
         ',' => Token::Comma,
         ':' => Token::Colon,
+        'n' => match tokenize_null(chars, index) {
+            Ok(token) => token,
+            Err(err) => return Err(err),
+        },
+        't' => todo!("implement `true` token"),
+        'f' => todo!("implement `false` token"),
 
         _ => todo!("implement other tokens"),
+    };
+    Ok(token)
+}
+
+
+fn tokenize_null(chars: &[char], index: &mut usize) -> Result<Token, TokenizeError> {
+    for expected_char in "null".chars() {
+        if expected_char != chars[*index] {
+            return Err(TokenizeError::UnfinishedLiteralValue);
+        }
+        *index += 1;
     }
+    Ok(Token::Null)
 }
 
 #[derive(Debug, PartialEq)]
@@ -61,7 +85,7 @@ mod tests {
         let input = String::from(",");
         let expected = [Token::Comma];
 
-        let actual = tokenize(input);
+        let actual = tokenize(input).unwrap();
 
         assert_eq!(actual, expected);
     }
@@ -78,7 +102,7 @@ mod tests {
             Token::Colon,
         ];
 
-        let actual = tokenize(input);
+        let actual = tokenize(input).unwrap();
 
         assert_eq!(actual, expected);
     }
@@ -97,8 +121,18 @@ mod tests {
             Token::Colon,
         ];
 
-        let actual = tokenize(input);
+        let actual = tokenize(input).unwrap();
 
         assert_eq!(actual, expected);
+    }
+
+    #[test]
+    fn just_null() {
+        let input = String::from("null");
+        let expected = [Token::Null];
+
+        let actual = tokenize(input).unwrap();
+
+        assert_eq!(actual, expected)
     }
 }
