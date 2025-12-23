@@ -46,6 +46,7 @@ fn make_token(chars: &[char], index: &mut usize) -> Result<Token, TokenizeError>
 
 fn tokenize_string(chars: &[char], index: &mut usize) -> Result<Token, TokenizeError> {
     let mut string = String::new();
+    let mut is_escaping = false;
 
     loop {
         *index += 1;
@@ -53,8 +54,10 @@ fn tokenize_string(chars: &[char], index: &mut usize) -> Result<Token, TokenizeE
             return Err(TokenizeError::UnclosedQuotes);
         }
         let ch = chars[*index];
-        if ch == '"' {
-            break;
+        match ch {
+            '"' if !is_escaping => break,
+            '\\' => is_escaping = !is_escaping,
+            _ => is_escaping = false,
         }
         string.push(ch);
     }
@@ -146,7 +149,7 @@ pub enum Token {
 
 #[cfg(test)]
 mod tests {
-    use super::{Token, tokenize, TokenizeError};
+    use super::{Token, TokenizeError, tokenize};
 
     #[test]
     fn just_comma() {
@@ -271,6 +274,16 @@ mod tests {
         let expected = Err(TokenizeError::UnclosedQuotes);
 
         let actual = tokenize(input);
+
+        assert_eq!(actual, expected);
+    }
+
+    #[test]
+    fn escaped_quote() {
+        let input = String::from(r#""the \" is OK""#);
+        let expected = [Token::String(String::from(r#"the \" is OK"#))];
+
+        let actual = tokenize(input).unwrap();
 
         assert_eq!(actual, expected);
     }
