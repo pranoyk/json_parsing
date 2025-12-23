@@ -35,10 +35,26 @@ fn make_token(chars: &[char], index: &mut usize) -> Result<Token, TokenizeError>
         't' => tokenize_true(chars, index)?,
         'f' => tokenize_false(chars, index)?,
         c if c.is_ascii_digit() => tokenize_float(chars, index)?,
+        '"' => tokenize_string(chars, index)?,
 
         _ => todo!("implement other tokens"),
     };
     Ok(token)
+}
+
+fn tokenize_string(chars: &[char], index: &mut usize) -> Result<Token, TokenizeError> {
+    let mut string = String::new();
+
+    while *index < chars.len() {
+        *index += 1;
+        let ch = chars[*index];
+        if ch == '"' {
+            break;
+        }
+        string.push(ch);
+    }
+
+    Ok(Token::String(string))
 }
 
 fn tokenize_float(chars: &[char], index: &mut usize) -> Result<Token, TokenizeError> {
@@ -227,6 +243,17 @@ mod tests {
     fn floating_point() {
         let input = String::from("1.23");
         let expected = [Token::Number(1.23)];
+
+        let actual = tokenize(input).unwrap();
+
+        assert_eq!(actual, expected);
+    }
+
+    // inside of `mod tests`, among the other tests
+    #[test]
+    fn just_ken() {
+        let input = String::from("\"ken\"");
+        let expected = [Token::String(String::from("ken"))];
 
         let actual = tokenize(input).unwrap();
 
