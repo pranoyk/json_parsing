@@ -43,6 +43,7 @@ fn tokenize_null(chars: &[char], index: &mut usize) -> Result<Token, TokenizeErr
         }
         *index += 1;
     }
+    *index -= 1;
     Ok(Token::Null)
 }
 
@@ -53,6 +54,7 @@ fn tokenize_false(chars: &[char], index: &mut usize) -> Result<Token, TokenizeEr
         }
         *index += 1;
     }
+    *index -= 1;
     Ok(Token::False)
 }
 
@@ -63,6 +65,7 @@ fn tokenize_true(chars: &[char], index: &mut usize) -> Result<Token, TokenizeErr
         }
         *index += 1;
     }
+    *index -= 1;
     Ok(Token::True)
 }
 
@@ -166,6 +169,16 @@ mod tests {
     fn just_true() {
         let input = String::from("true");
         let expected = [Token::True];
+
+        let actual = tokenize(input).unwrap();
+
+        assert_eq!(actual, expected);
+    }
+
+    #[test]
+    fn true_colon() {
+        let input = String::from("true:");
+        let expected = [Token::True, Token::Colon];
 
         let actual = tokenize(input).unwrap();
 
