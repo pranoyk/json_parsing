@@ -1,6 +1,10 @@
+use std::num::ParseFloatError;
+
 #[derive(Debug, PartialEq, Eq, Clone)]
 pub enum TokenizeError {
     UnfinishedLiteralValue,
+    /// Unable to parse the float
+    ParseNumberError(ParseFloatError),
 }
 
 pub fn tokenize(input: String) -> Result<Vec<Token>, TokenizeError> {
@@ -30,10 +34,34 @@ fn make_token(chars: &[char], index: &mut usize) -> Result<Token, TokenizeError>
         'n' => tokenize_null(chars, index)?,
         't' => tokenize_true(chars, index)?,
         'f' => tokenize_false(chars, index)?,
+        c if c.is_ascii_digit() => tokenize_float(chars, index)?,
 
         _ => todo!("implement other tokens"),
     };
     Ok(token)
+}
+
+fn tokenize_float(chars: &[char], index: &mut usize) -> Result<Token, TokenizeError> {
+    let mut unparsed_num = String::new();
+    let mut has_decimal = false;
+
+    while *index < chars.len() {
+        let ch = chars[*index];
+        match ch {
+            c if c.is_ascii_digit() => unparsed_num.push(c),
+            c if c == '.' && !has_decimal => {
+                unparsed_num.push('.');
+                has_decimal = true;
+            }
+            _ => break,
+        }
+        *index += 1;
+    }
+
+    match unparsed_num.parse() {
+        Ok(f) => Ok(Token::Number(f)),
+        Err(err) => Err(TokenizeError::ParseNumberError(err)),
+    }
 }
 
 fn tokenize_null(chars: &[char], index: &mut usize) -> Result<Token, TokenizeError> {
@@ -179,6 +207,26 @@ mod tests {
     fn true_colon() {
         let input = String::from("true:");
         let expected = [Token::True, Token::Colon];
+
+        let actual = tokenize(input).unwrap();
+
+        assert_eq!(actual, expected);
+    }
+
+    #[test]
+    fn integer() {
+        let input = String::from("123");
+        let expected = [Token::Number(123.0)];
+
+        let actual = tokenize(input).unwrap();
+
+        assert_eq!(actual, expected);
+    }
+
+    #[test]
+    fn floating_point() {
+        let input = String::from("1.23");
+        let expected = [Token::Number(1.23)];
 
         let actual = tokenize(input).unwrap();
 
