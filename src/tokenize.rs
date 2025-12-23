@@ -27,18 +27,14 @@ fn make_token(chars: &[char], index: &mut usize) -> Result<Token, TokenizeError>
         '}' => Token::RightBrace,
         ',' => Token::Comma,
         ':' => Token::Colon,
-        'n' => match tokenize_null(chars, index) {
-            Ok(token) => token,
-            Err(err) => return Err(err),
-        },
-        't' => todo!("implement `true` token"),
-        'f' => todo!("implement `false` token"),
+        'n' => tokenize_null(chars, index)?,
+        't' => tokenize_true(chars, index)?,
+        'f' => tokenize_false(chars, index)?,
 
         _ => todo!("implement other tokens"),
     };
     Ok(token)
 }
-
 
 fn tokenize_null(chars: &[char], index: &mut usize) -> Result<Token, TokenizeError> {
     for expected_char in "null".chars() {
@@ -48,6 +44,26 @@ fn tokenize_null(chars: &[char], index: &mut usize) -> Result<Token, TokenizeErr
         *index += 1;
     }
     Ok(Token::Null)
+}
+
+fn tokenize_false(chars: &[char], index: &mut usize) -> Result<Token, TokenizeError> {
+    for expected_char in "false".chars() {
+        if expected_char != chars[*index] {
+            return Err(TokenizeError::UnfinishedLiteralValue);
+        }
+        *index += 1;
+    }
+    Ok(Token::False)
+}
+
+fn tokenize_true(chars: &[char], index: &mut usize) -> Result<Token, TokenizeError> {
+    for expected_char in "true".chars() {
+        if expected_char != chars[*index] {
+            return Err(TokenizeError::UnfinishedLiteralValue);
+        }
+        *index += 1;
+    }
+    Ok(Token::True)
 }
 
 #[derive(Debug, PartialEq)]
@@ -134,5 +150,25 @@ mod tests {
         let actual = tokenize(input).unwrap();
 
         assert_eq!(actual, expected)
+    }
+
+    #[test]
+    fn just_false() {
+        let input = String::from("false");
+        let expected = [Token::False];
+
+        let actual = tokenize(input).unwrap();
+
+        assert_eq!(actual, expected);
+    }
+
+    #[test]
+    fn just_true() {
+        let input = String::from("true");
+        let expected = [Token::True];
+
+        let actual = tokenize(input).unwrap();
+
+        assert_eq!(actual, expected);
     }
 }
