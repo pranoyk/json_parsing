@@ -1,3 +1,7 @@
+use std::collections::HashMap;
+
+mod tokenize;
+
 /// Representation of a JSON value
 pub enum Value {
     /// literal characters `null`
@@ -7,7 +11,7 @@ pub enum Value {
     Boolean(bool),
 
     /// characters within double quotes "..."
-    Characters(String),
+    String(String),
 
     /// numbers stored as a 64-bit floating point
     Number(f64),
