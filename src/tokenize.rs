@@ -7,6 +7,10 @@ pub enum TokenizeError {
     ParseNumberError(ParseFloatError),
     /// String was never completed
     UnclosedQuotes,
+     /// The input ended early
+    UnexpectedEof,
+    /// Character is not part of a JSON token
+    CharNotRecognized(char),
 }
 
 pub fn tokenize(input: String) -> Result<Vec<Token>, TokenizeError> {
@@ -25,7 +29,14 @@ pub fn tokenize(input: String) -> Result<Vec<Token>, TokenizeError> {
 }
 
 fn make_token(chars: &[char], index: &mut usize) -> Result<Token, TokenizeError> {
-    let ch = chars[*index];
+    let mut ch = chars[*index];
+    while ch.is_ascii_whitespace() {
+        *index += 1;
+        if *index >= chars.len() {
+            return Err(TokenizeError::UnexpectedEof);
+        }
+        ch = chars[*index];
+    }
     let token = match ch {
         '[' => Token::LeftBracket,
         ']' => Token::RightBracket,
@@ -38,6 +49,7 @@ fn make_token(chars: &[char], index: &mut usize) -> Result<Token, TokenizeError>
         'f' => tokenize_false(chars, index)?,
         c if c.is_ascii_digit() => tokenize_float(chars, index)?,
         '"' => tokenize_string(chars, index)?,
+        ch => return Err(TokenizeError::CharNotRecognized(ch)),
 
         _ => todo!("implement other tokens"),
     };
