@@ -1,6 +1,7 @@
 use std::collections::HashMap;
 
 mod tokenize;
+mod parse;
 
 /// Representation of a JSON value
 pub enum Value {
