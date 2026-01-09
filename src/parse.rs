@@ -18,3 +18,41 @@ fn parse_tokens(tokens: &[Token], index: &mut usize) -> Result<Value, TokenParse
 
 #[derive(Debug, PartialEq)]
 enum TokenParseError {}
+
+#[cfg(test)]
+mod tests {
+    use crate::tokenize::Token;
+    use crate::Value;
+
+    use super::parse_tokens;
+
+    #[test]
+    fn parses_null() {
+        let input = [Token::Null];
+        let expected = Value::Null;
+
+        let actual = parse_tokens(&input, &mut 0).unwrap();
+
+        assert_eq!(actual, expected);
+    }
+
+    #[test]
+    fn parses_true() {
+        let input = [Token::True];
+        let expected = Value::Boolean(true);
+
+        let actual = parse_tokens(&input, &mut 0).unwrap();
+
+        assert_eq!(actual, expected);
+    }
+
+    #[test]
+    fn parses_false() {
+        let input = [Token::False];
+        let expected = Value::Boolean(false);
+
+        let actual = parse_tokens(&input, &mut 0).unwrap();
+
+        assert_eq!(actual, expected);
+    }
+}

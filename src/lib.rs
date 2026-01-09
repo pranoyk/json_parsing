@@ -3,6 +3,7 @@ use std::collections::HashMap;
 mod tokenize;
 mod parse;
 
+#[derive(Debug, PartialEq)]
 /// Representation of a JSON value
 pub enum Value {
     /// literal characters `null`
