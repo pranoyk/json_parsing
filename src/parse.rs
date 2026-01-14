@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 use crate::Value;
 use crate::tokenize::Token;
 
@@ -16,9 +18,41 @@ fn parse_tokens(tokens: &[Token], index: &mut usize) -> ParseResult {
         Token::Number(number) => Ok(Value::Number(*number)),
         Token::String(string) => parse_string(string),
         Token::LeftBracket => parse_array(tokens, index),
-        Token::LeftBrace => todo!(),
+        Token::LeftBrace => parse_object(tokens, index),
         _ => todo!(),
     }
+}
+
+fn parse_object(tokens: &[Token], index: &mut usize) -> ParseResult {
+    let mut map = HashMap::new();
+    loop {
+        *index += 1;
+        if tokens[*index] == Token::RightBrace {
+            break;
+        }
+        if let Token::String(s) = &tokens[*index] {
+            *index += 1;
+            if Token::Colon == tokens[*index] {
+                *index += 1;
+                let key = s.clone();
+                let value = parse_tokens(tokens, index)?;
+                map.insert(key, value);
+                match &tokens[*index] {
+                    Token::Comma => {}
+                    Token::RightBrace => break,
+                    _ => return Err(TokenParseError::ExpectedComma),
+                }
+            } else {
+                return Err(TokenParseError::ExpectedColon);
+            }
+        } else {
+            return Err(TokenParseError::ExpectedProperty);
+        }
+    }
+    // Consume the RightBrace token
+    *index += 1;
+
+    Ok(Value::Object(map))
 }
 
 fn parse_array(tokens: &[Token], index: &mut usize) -> ParseResult {
@@ -101,10 +135,16 @@ enum TokenParseError {
     InvalidCodePointValue,
 
     ExpectedComma,
+
+    ExpectedProperty,
+
+    ExpectedColon,
 }
 
 #[cfg(test)]
 mod tests {
+    use std::collections::HashMap;
+
     use crate::Value;
     use crate::tokenize::Token;
 
@@ -242,6 +282,59 @@ mod tests {
             Token::RightBracket,
         ];
         let expected = Value::Array(vec![Value::Null, Value::Array(vec![Value::Null])]);
+
+        let actual = parse_tokens(&input, &mut 0).unwrap();
+
+        assert_eq!(actual, expected);
+    }
+
+    #[test]
+    fn parses_object_one_element() {
+        // {"foo": true}
+        let input = [
+            Token::LeftBrace,
+            Token::String("foo".into()),
+            Token::Colon,
+            Token::True,
+            Token::RightBrace,
+        ];
+
+        let expected = Value::Object(HashMap::from([("foo".to_string(), Value::Boolean(true))]));
+
+        let actual = parse_tokens(&input, &mut 0).unwrap();
+
+        assert_eq!(actual, expected);
+    }
+
+    #[test]
+    fn parse_object_empty() {
+        let input = [Token::LeftBrace, Token::RightBrace];
+        let expected = Value::Object(HashMap::new());
+
+        let actual = parse_tokens(&input, &mut 0).unwrap();
+
+        assert_eq!(actual, expected);
+    }
+
+    #[test]
+    fn parses_object_nested_objects() {
+        // {"foo": true}
+        let input = [
+            Token::LeftBrace,
+            Token::String("foo".into()),
+            Token::Colon,
+            Token::LeftBrace,
+            Token::String("bar".into()),
+            Token::Colon,
+            Token::True,
+            Token::RightBrace,
+            Token::RightBrace,
+        ];
+
+        let expected = Value::Object(HashMap::from([(
+            "foo".to_string(),
+            Value::Object(HashMap::from([(("bar".to_string()), Value::Boolean(true))])),
+        )]));
 
         let actual = parse_tokens(&input, &mut 0).unwrap();
 
