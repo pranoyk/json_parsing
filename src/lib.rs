@@ -1,7 +1,16 @@
+mod parse;
+mod tokenize;
+
 use std::collections::HashMap;
 
-mod tokenize;
-mod parse;
+use parse::{TokenParseError, parse_tokens};
+use tokenize::{TokenizeError, tokenize};
+
+pub fn parse(input: String) -> Result<Value, ParseError> {
+    let tokens = tokenize(input)?;
+    let value = parse_tokens(&tokens, &mut 0)?;
+    Ok(value)
+}
 
 #[derive(Debug, PartialEq)]
 /// Representation of a JSON value
@@ -23,4 +32,22 @@ pub enum Value {
 
     /// String keys with JSON values
     Object(HashMap<String, Value>),
+}
+
+#[derive(Debug, PartialEq)]
+pub enum ParseError {
+    TokenizeError(TokenizeError),
+    ParseError(TokenParseError),
+}
+
+impl From<TokenParseError> for ParseError {
+    fn from(err: TokenParseError) -> Self {
+        Self::ParseError(err)
+    }
+}
+
+impl From<TokenizeError> for ParseError {
+    fn from(err: TokenizeError) -> Self {
+        Self::TokenizeError(err)
+    }
 }
