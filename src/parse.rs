@@ -3,6 +3,12 @@ use crate::tokenize::Token;
 
 fn parse_tokens(tokens: &[Token], index: &mut usize) -> ParseResult {
     let token = &tokens[*index];
+    if matches!(
+        token,
+        Token::Null | Token::False | Token::True | Token::Number(_) | Token::String(_)
+    ) {
+        *index += 1
+    }
     match token {
         Token::Null => Ok(Value::Null),
         Token::False => Ok(Value::Boolean(false)),
@@ -20,13 +26,12 @@ fn parse_array(tokens: &[Token], index: &mut usize) -> ParseResult {
     loop {
         // consume the previous LeftBracket or Comma token
         *index += 1;
-         if tokens[*index] == Token::RightBracket {
+        if tokens[*index] == Token::RightBracket {
             break;
         }
         let value = parse_tokens(tokens, index)?;
         array.push(value);
 
-        *index += 1;
         let token = &tokens[*index];
         match token {
             Token::Comma => {}
@@ -218,6 +223,25 @@ mod tests {
         // []
         let input = [Token::LeftBracket, Token::RightBracket];
         let expected = Value::Array(vec![]);
+
+        let actual = parse_tokens(&input, &mut 0).unwrap();
+
+        assert_eq!(actual, expected);
+    }
+
+    #[test]
+    fn parses_nested_array() {
+        // [null, [null]]
+        let input = [
+            Token::LeftBracket,
+            Token::Null,
+            Token::Comma,
+            Token::LeftBracket,
+            Token::Null,
+            Token::RightBracket,
+            Token::RightBracket,
+        ];
+        let expected = Value::Array(vec![Value::Null, Value::Array(vec![Value::Null])]);
 
         let actual = parse_tokens(&input, &mut 0).unwrap();
 
